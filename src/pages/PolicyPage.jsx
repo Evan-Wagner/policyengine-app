@@ -424,17 +424,335 @@ export default function PolicyPage(props) {
     );
   }
 
-  return (
-    <ThreeColumnPage
-      left={<PolicyLeftSidebar metadata={metadata} />}
-      middle={middle}
-      right={
-        <PolicyRightSidebar
-          metadata={metadata}
-          policy={policy}
-          setPolicy={setPolicy}
+  function ParameterMenu({ addParameter, existingParameters }) {
+    const parameterOptions = [
+      {
+        name: "Child Tax Credit",
+        currentLawValue: 100,
+      },
+      {
+        name: "Earned Income Tax Credit",
+        currentLawValue: 500,
+      },
+      {
+        name: "Estate Tax",
+        currentLawValue: 1000,
+      },
+      {
+        name: "Income Tax",
+        currentLawValue: 200,
+      },
+    ].filter(option => !existingParameters.some(param => param.name === option.name));
+
+    return (
+      <table>
+        <th>Parameter</th>
+        <th>Current Law Value</th>
+        {parameterOptions.map((parameter, index) => (
+          <tr key={index} 
+              style={{
+                border: '1px solid black', 
+                padding: '5px', 
+                cursor: 'pointer', 
+                marginBottom: '5px'
+              }}
+              onClick={() => addParameter(parameter)}
+              onMouseOver={(e) => e.target.style.backgroundColor = 'lightgray'}
+              onMouseOut={(e) => e.target.style.backgroundColor = ''}
+          >
+            <td>{parameter.name}</td>
+            <td>{parameter.currentLawValue}</td>
+          </tr>
+        ))}
+      </table>
+    );
+  }
+
+  function ParameterTable(props) {
+    const [editingParamIndex, setEditingParamIndex] = useState(null);
+    const [tempValue, setTempValue] = useState(null);
+
+    const handleEditClick = (index, value) => {
+      setEditingParamIndex(index);
+      setTempValue(value);
+    };
+
+    const handleSaveClick = () => {
+      props.updateParameter(editingParamIndex, tempValue);
+      setEditingParamIndex(null);
+      setTempValue(null);
+    };
+
+    const handleRemoveClick = (index) => {
+      props.removeParameter(index);
+    };
+
+    return (
+      <table>
+        {props.parameters.map((parameter, index) => {
+          return (
+            <tr key={index}>
+              <th>{parameter.name}</th>
+              <td>
+                {props.isCurrentLaw ? parameter.currentLawValue : editingParamIndex === index ?
+                  <input 
+                    value={tempValue} 
+                    onChange={(e) => setTempValue(e.target.value)}
+                  /> :
+                  parameter.reformValue
+                }
+              </td>
+              {!props.isCurrentLaw &&
+                <td>
+                  <button onClick={() => 
+                    editingParamIndex === index ? 
+                      handleSaveClick() : handleEditClick(index, parameter.reformValue)
+                  }>
+                    {editingParamIndex === index ? 'Save' : 'Edit'}
+                  </button>
+                  <button onClick={() => handleRemoveClick(index)}>
+                    Remove
+                  </button>
+                </td>
+              }
+            </tr>
+          );
+        })}
+      </table>
+    )
+  }
+
+  function PolicyScenario(props) {
+    const [isEditingTitle, setIsEditingTitle] = useState(false);
+    const [title, setTitle] = useState(props.title);
+
+    const [showParameterMenu, setShowParameterMenu] = useState(false);
+
+    const addParameter = (newParam) => {
+      props.addNewParameter(newParam);
+      setShowParameterMenu(false);
+    };
+  
+    return (
+      <div
+        style={{
+          width: "100%",
+          padding: "5px",
+          marginBottom: "10px",
+          backgroundColor: "lightgray",
+        }}
+      >
+        {isEditingTitle ? 
+          <input value={title} onChange={(e) => setTitle(e.target.value)} /> :
+          <b>{title}</b>
+        }
+        {!props.isCurrentLaw ? 
+        <button onClick={() => { 
+          if (isEditingTitle) props.updateTitle(title);
+          setIsEditingTitle(!isEditingTitle);
+        }}>
+            {isEditingTitle ? 'Save' : 'Edit'}
+          </button> : null
+        }
+        {props.isCurrentLaw && props.parameters.length == 0 ?
+          <><br /><i>Add at least one parameter to view current law values.</i></> :
+          <ParameterTable
+            parameters={props.parameters}
+            isCurrentLaw={props.isCurrentLaw}
+            updateParameter={props.updateParameter}
+            removeParameter={props.removeParameter}
+          />
+        }
+        {!props.isCurrentLaw && !showParameterMenu ? 
+          <button onClick={() => setShowParameterMenu(true)}>Add Parameter</button> : 
+          null
+        }
+        {showParameterMenu ? 
+          <ParameterMenu 
+            addParameter={addParameter} 
+            existingParameters={props.parameters} 
+          /> : 
+          null
+        }
+      </div>
+    );
+  }
+
+  function ExpandCollapseButton(props) {
+    return (
+      <button 
+        onClick={props.toggleExpand}
+        style={{
+          height: "20px",
+          width: "20px",
+          backgroundColor: props.expanded ? "#FFD700" : "white",
+        }}
+      />
+    );
+  }
+
+  function SectionHeader(props) {
+    return (
+      <div
+        style={{
+          padding: "10px",
+          display: "flex",
+          justifyContent: "space-between",
+          width: props.title === "Visualize" && !props.expanded ? "auto" : "100%",
+          height: props.title === "Visualize" && !props.expanded ? "100%" : "auto",
+          backgroundColor: "lightgray",
+        }}
+        onClick={props.toggleExpand}
+      >
+        {props.expanded || props.title !== "Visualize" ? props.title : null}
+        <ExpandCollapseButton 
+          expanded={props.expanded} 
+          toggleExpand={props.toggleExpand}
         />
-      }
-    />
+      </div>
+    );
+  }
+
+  function SectionBody(props) {
+    return (props.expanded ?
+      <div
+        style={{
+          flex: 1,
+          width: "100%",
+          padding: "10px",
+          overflow: "hidden",
+          overflowY: "auto",
+          backgroundColor: "darkgray",
+        }}
+      >
+        {props.children}
+      </div> : null
+    );
+  }
+
+  function LeftColumn() {
+    const [buildExpanded, setBuildExpanded] = useState(true);
+    const [analyzeExpanded, setAnalyzeExpanded] = useState(true);
+
+    const [policyTitle, setPolicyTitle] = useState("Untitled Reform");
+
+    const [parameters, setParameters] = useState([]);
+
+    const addNewParameter = (newParam) => {
+      setParameters([...parameters, {...newParam, reformValue: newParam.currentLawValue}]);
+    };
+
+    const updateParameter = (index, newValue) => {
+      const updatedParameters = [...parameters];
+      updatedParameters[index].reformValue = newValue;
+      setParameters(updatedParameters);
+    };
+
+    const removeParameter = (index) => {
+      const updatedParameters = [...parameters];
+      updatedParameters.splice(index, 1);
+      setParameters(updatedParameters);
+    };
+
+    return (
+      <div
+        style={{
+          display: "flex",
+          flex: 1.5,
+          flexDirection: "column",
+          alignItems: "center",
+          gap: "5px",
+          padding: "2.5px",
+          height: "100%",
+          width: "calc(100% - min-content)"
+        }}
+      >
+        <SectionHeader
+          title="Build"
+          expanded={buildExpanded}
+          toggleExpand={() => {
+            setBuildExpanded(!buildExpanded);
+            if(!analyzeExpanded) {setAnalyzeExpanded(true);}
+          }}
+          />
+        <SectionBody
+          expanded={buildExpanded}
+        >
+          <PolicyScenario
+            title="Current Law"
+            isCurrentLaw={true}
+            parameters={parameters}
+          />
+          <PolicyScenario
+            title={policyTitle}
+            isCurrentLaw={false}
+            parameters={parameters}
+            updateTitle={setPolicyTitle}
+            addNewParameter={addNewParameter}
+            updateParameter={updateParameter}
+            removeParameter={removeParameter}
+          />
+        </SectionBody>
+        <SectionHeader
+          title="Analyze"
+          expanded={analyzeExpanded}
+          toggleExpand={() => {
+            setAnalyzeExpanded(!analyzeExpanded);
+            if (!buildExpanded) {setBuildExpanded(true);}
+          }}
+          />
+        <SectionBody
+          expanded={analyzeExpanded}
+        >
+          Analyze policy scenarios here.
+        </SectionBody>
+      </div>
+    );
+  }
+
+  function RightColumn() {
+    const [visualizeExpanded, setVisualizeExpanded] = useState(true);
+
+    return (
+      <div
+        style={{
+          display: "flex",
+          flex: visualizeExpanded ? 1 : "none",
+          flexDirection: "column",
+          alignItems: "center",
+          gap: "5px",
+          padding: "2.5px",
+          height: "100%",
+        }}
+      >
+        <SectionHeader
+          title="Visualize"
+          expanded={visualizeExpanded}
+          toggleExpand={() => setVisualizeExpanded(!visualizeExpanded)}
+          />
+        <SectionBody
+          expanded={visualizeExpanded}
+        >
+          Visualize policy scenarios here.
+        </SectionBody>
+      </div>
+    );
+  }
+
+  return (
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "row",
+        justifyContent: "space-between",
+        height: "90vh",
+        width: "100%",
+        boxSizing: "border-box",
+        padding: 10,
+      }}
+    >
+      <LeftColumn />
+      <RightColumn />
+    </div>
   );
 }
