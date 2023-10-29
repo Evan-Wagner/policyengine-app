@@ -540,6 +540,7 @@ export default function PolicyPage(props) {
           padding: "5px",
           marginBottom: "10px",
           backgroundColor: "lightgray",
+          border: '1px solid '+style.colors.BLUE,
         }}
       >
         {isEditingTitle ? 
@@ -578,6 +579,124 @@ export default function PolicyPage(props) {
     );
   }
 
+  function ChartSetting(props) {
+    return (
+      <div
+        style={{
+          padding: "5px",
+          border: "solid 1px black",
+        }}
+      >
+        <b>{props.title}</b><br />
+        {props.children}
+      </div>
+    );
+  }
+
+  function ChartSettings(props) {
+    const [household, setHousehold] = useState("none");
+    const [region, setRegion] = useState("all");
+    const [metric, setMetric] = useState("budgetaryImpact");
+    const [grouping, setGrouping] = useState("none");
+    const [startTime, setStartTime] = useState("2024");
+    const [endTime, setEndTime] = useState("2027");
+
+    return (
+      <div
+        style={{
+          width: "100%",
+          display: "flex",
+          flexDirection: "row",
+          padding: "10px",
+          marginBottom: "10px",
+          overflow: "hidden",
+          overflowX: "auto",
+          backgroundColor: "lightgray",
+        }}
+      >
+        <ChartSetting
+          title="Household"
+        >
+          <select
+            value={household}
+            onChange={(e) => setHousehold(e.target.value)}
+          >
+            <option value="none">None</option>
+            <option value="byAge">My household</option>
+          </select>
+        </ChartSetting>
+        <ChartSetting
+          title="Region"
+        >
+          <select
+            value={region}
+            onChange={(e) => setRegion(e.target.value)}
+          >
+            <option value="all">All</option>
+            <option value="alabama">Alabama</option>
+            <option value="wyoming">Wyoming</option>
+          </select>
+        </ChartSetting>
+        <ChartSetting
+          title="Metric"
+        >
+          <select
+            value={metric}
+            onChange={(e) => setMetric(e.target.value)}
+          >
+            {household !== "none" ? <>
+              <option value="netIncome">Net income</option>
+              <option value="earningsVariation">Earnings variation</option>
+              <option value="marginalTaxRate">Marginal tax rate</option>
+            </> : <>
+              <option value="budgetaryImpact">Budgetary impact</option>
+              <option value="outcomes">Outcomes</option>
+              <option value="netIncomeAbsolute">Net income (absolute)</option>
+              <option value="netIncomeRelative">Net income (relative)</option>
+              <option value="cliffImpact">Net income cliffs</option>
+              <option value="povertyImpact">Poverty rate</option>
+              <option value="deepPovertyImpact">Deep poverty rate</option>
+              <option value="incomeInequalityImpact">Income inequality</option>
+            </>}
+          </select>
+        </ChartSetting>
+        {household !== "none" || metric === "budgetaryImpact" ? null : <ChartSetting
+          title="Grouping"
+        >
+          <select
+            value={grouping}
+            onChange={(e) => setGrouping(e.target.value)}
+          >
+            <option value="none">None</option>
+            <option value="byAge">By age</option>
+            <option value="bySex">By gender</option>
+            <option value="byRace">By race</option>
+            <option value="byIncomeLevel">By income level</option>
+          </select>
+        </ChartSetting>}
+        {household !== "none" ? null : <ChartSetting
+          title="Time Period"
+        >
+          <input
+            style={{
+              maxWidth: "52px",
+            }}
+            value={startTime}
+            onChange={(e) => setStartTime(e.target.value)}
+          ></input>
+          <span>  to  </span>
+          <input
+            style={{
+              maxWidth: "52px",
+            }}
+            value={endTime}
+            onChange={(e) => setEndTime(e.target.value)}
+          ></input>
+        </ChartSetting>}
+      </div>
+    );
+  }
+
   function ExpandCollapseButton(props) {
     return (
       <button 
@@ -598,17 +717,18 @@ export default function PolicyPage(props) {
           padding: "10px",
           display: "flex",
           justifyContent: "space-between",
-          width: props.title === "Visualize" && !props.expanded ? "auto" : "100%",
-          height: props.title === "Visualize" && !props.expanded ? "100%" : "auto",
+          width: props.title === "Output" && !props.expanded ? "auto" : "100%",
+          height: props.title === "Output" && !props.expanded ? "100%" : "auto",
           backgroundColor: "lightgray",
+          fontSize: 30,
         }}
         onClick={props.toggleExpand}
       >
-        {props.expanded || props.title !== "Visualize" ? props.title : null}
-        <ExpandCollapseButton 
+        {props.expanded || props.title !== "Output" ? props.title : null}
+        {props.title == "Output" ? <ExpandCollapseButton 
           expanded={props.expanded} 
           toggleExpand={props.toggleExpand}
-        />
+        /> : null}
       </div>
     );
   }
@@ -631,9 +751,6 @@ export default function PolicyPage(props) {
   }
 
   function LeftColumn() {
-    const [buildExpanded, setBuildExpanded] = useState(true);
-    const [analyzeExpanded, setAnalyzeExpanded] = useState(true);
-
     const [policyTitle, setPolicyTitle] = useState("Untitled Reform");
 
     const [parameters, setParameters] = useState([]);
@@ -668,15 +785,10 @@ export default function PolicyPage(props) {
         }}
       >
         <SectionHeader
-          title="Build"
-          expanded={buildExpanded}
-          toggleExpand={() => {
-            setBuildExpanded(!buildExpanded);
-            if(!analyzeExpanded) {setAnalyzeExpanded(true);}
-          }}
+          title="Input"
           />
         <SectionBody
-          expanded={buildExpanded}
+          expanded={true}
         >
           <PolicyScenario
             title="Current Law"
@@ -693,31 +805,21 @@ export default function PolicyPage(props) {
             removeParameter={removeParameter}
           />
         </SectionBody>
-        <SectionHeader
-          title="Analyze"
-          expanded={analyzeExpanded}
-          toggleExpand={() => {
-            setAnalyzeExpanded(!analyzeExpanded);
-            if (!buildExpanded) {setBuildExpanded(true);}
-          }}
-          />
-        <SectionBody
-          expanded={analyzeExpanded}
-        >
-          Analyze policy scenarios here.
-        </SectionBody>
+        <ChartSettings
+          
+        />
       </div>
     );
   }
 
   function RightColumn() {
-    const [visualizeExpanded, setVisualizeExpanded] = useState(true);
+    const [outputExpanded, setOutputExpanded] = useState(true);
 
     return (
       <div
         style={{
           display: "flex",
-          flex: visualizeExpanded ? 1 : "none",
+          flex: outputExpanded ? 1 : "none",
           flexDirection: "column",
           alignItems: "center",
           gap: "5px",
@@ -726,14 +828,14 @@ export default function PolicyPage(props) {
         }}
       >
         <SectionHeader
-          title="Visualize"
-          expanded={visualizeExpanded}
-          toggleExpand={() => setVisualizeExpanded(!visualizeExpanded)}
+          title="Output"
+          expanded={outputExpanded}
+          toggleExpand={() => setOutputExpanded(!outputExpanded)}
           />
         <SectionBody
-          expanded={visualizeExpanded}
+          expanded={outputExpanded}
         >
-          Visualize policy scenarios here.
+          Charts output here.
         </SectionBody>
       </div>
     );
@@ -749,6 +851,7 @@ export default function PolicyPage(props) {
         width: "100%",
         boxSizing: "border-box",
         padding: 10,
+        fontSize: 18,
       }}
     >
       <LeftColumn />
