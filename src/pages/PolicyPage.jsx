@@ -579,7 +579,7 @@ export default function PolicyPage(props) {
     );
   }
 
-  function ChartSetting(props) {
+  function CalcSetting(props) {
     return (
       <div
         style={{
@@ -593,7 +593,7 @@ export default function PolicyPage(props) {
     );
   }
 
-  function ChartSettings(props) {
+  function CalcSettingsPanel(props) {
     const [household, setHousehold] = useState("none");
     const [region, setRegion] = useState("all");
     const [metric, setMetric] = useState("budgetaryImpact");
@@ -614,7 +614,7 @@ export default function PolicyPage(props) {
           backgroundColor: "lightgray",
         }}
       >
-        <ChartSetting
+        <CalcSetting
           title="Household"
         >
           <select
@@ -624,8 +624,8 @@ export default function PolicyPage(props) {
             <option value="none">None</option>
             <option value="byAge">My household</option>
           </select>
-        </ChartSetting>
-        <ChartSetting
+        </CalcSetting>
+        <CalcSetting
           title="Region"
         >
           <select
@@ -636,8 +636,8 @@ export default function PolicyPage(props) {
             <option value="alabama">Alabama</option>
             <option value="wyoming">Wyoming</option>
           </select>
-        </ChartSetting>
-        <ChartSetting
+        </CalcSetting>
+        <CalcSetting
           title="Metric"
         >
           <select
@@ -659,8 +659,8 @@ export default function PolicyPage(props) {
               <option value="incomeInequalityImpact">Income inequality</option>
             </>}
           </select>
-        </ChartSetting>
-        {household !== "none" || metric === "budgetaryImpact" ? null : <ChartSetting
+        </CalcSetting>
+        {household !== "none" || metric === "budgetaryImpact" ? null : <CalcSetting
           title="Grouping"
         >
           <select
@@ -673,8 +673,8 @@ export default function PolicyPage(props) {
             <option value="byRace">By race</option>
             <option value="byIncomeLevel">By income level</option>
           </select>
-        </ChartSetting>}
-        {household !== "none" ? null : <ChartSetting
+        </CalcSetting>}
+        {household !== "none" ? null : <CalcSetting
           title="Time Period"
         >
           <input
@@ -692,7 +692,7 @@ export default function PolicyPage(props) {
             value={endTime}
             onChange={(e) => setEndTime(e.target.value)}
           ></input>
-        </ChartSetting>}
+        </CalcSetting>}
       </div>
     );
   }
@@ -805,7 +805,7 @@ export default function PolicyPage(props) {
             removeParameter={removeParameter}
           />
         </SectionBody>
-        <ChartSettings
+        <CalcSettingsPanel
           
         />
       </div>
