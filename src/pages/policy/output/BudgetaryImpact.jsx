@@ -1,7 +1,7 @@
 import { useContext } from "react";
 import Plot from "react-plotly.js";
 import { ChartLogo } from "../../../api/charts";
-import { aggregateCurrency } from "../../../api/language";
+import { aggregateCurrency, localeString } from "../../../api/language";
 import HoverCard, { HoverCardContext } from "../../../layout/HoverCard";
 import useMobile from "../../../layout/Responsive";
 import DownloadableScreenshottable from "./DownloadableScreenshottable";
@@ -73,7 +73,7 @@ export default function BudgetaryImpact(props) {
             text: values.map((value) =>
               aggregateCurrency(value * 1e9, metadata),
             ),
-            increasing: { marker: { color: style.colors.DARK_GREEN } },
+            increasing: { marker: { color: style.colors.BLUE } },
             decreasing: { marker: { color: style.colors.DARK_GRAY } },
             // Total should be dark gray if negative, dark green if positive
             totals: {
@@ -81,7 +81,7 @@ export default function BudgetaryImpact(props) {
                 color:
                   budgetaryImpact < 0
                     ? style.colors.DARK_GRAY
-                    : style.colors.DARK_GREEN,
+                    : style.colors.BLUE,
               },
             },
             connector: { line: { color: style.colors.DARK_GRAY } },
@@ -129,8 +129,7 @@ export default function BudgetaryImpact(props) {
           },
           yaxis: {
             title: "Budgetary impact (bn)",
-            tickprefix: metadata.currency,
-            tickformat: ",.1f",
+            tickformat: "$,.1f",
           },
           ...(useHoverCard
             ? {}
@@ -157,6 +156,7 @@ export default function BudgetaryImpact(props) {
         config={{
           displayModeBar: false,
           responsive: true,
+          locale: localeString(metadata),
         }}
         style={{
           width: "100%",
