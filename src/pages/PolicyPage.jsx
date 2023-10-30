@@ -445,9 +445,7 @@ export default function PolicyPage(props) {
     ].filter(option => !existingParameters.some(param => param.name === option.name));
 
     return (
-      <table>
-        <th>Parameter</th>
-        <th>Current Law Value</th>
+      <>
         {parameterOptions.map((parameter, index) => (
           <tr key={index} 
               style={{
@@ -464,70 +462,61 @@ export default function PolicyPage(props) {
             <td>{parameter.currentLawValue}</td>
           </tr>
         ))}
-      </table>
+      </>
     );
   }
 
-  function ParameterTable(props) {
+  function ParameterRow(props) {
+    
+    return (
+      <tr key={props.index}>
+        <th>{props.parameter.name}</th>
+        <td>{props.parameter.currentLawValue}</td>
+        <td>
+          {props.isEditing ? 
+            <input 
+              value={props.tempValue} 
+              onChange={(e) => props.setTempValue(e.target.value)}
+            /> :
+            props.parameter.reformValue
+          }
+        </td>
+        <td>
+          <button onClick={() => 
+            props.isEditing ? props.handleSaveClick() : props.handleEditClick(props.index, props.parameter.reformValue)
+          }>
+            {props.isEditing ? 'Save' : 'Edit'}
+          </button>
+          <button onClick={() => props.handleRemoveClick(props.index)}>
+            Remove
+          </button>
+        </td>
+      </tr>
+    );
+  }
+
+  function PolicyTable(props) {
     const [editingParamIndex, setEditingParamIndex] = useState(null);
     const [tempValue, setTempValue] = useState(null);
-
+    const [isEditingTitle, setIsEditingTitle] = useState(false);
+    const [title, setTitle] = useState(props.title);
+    const [showParameterMenu, setShowParameterMenu] = useState(false);
+  
     const handleEditClick = (index, value) => {
       setEditingParamIndex(index);
       setTempValue(value);
     };
-
+  
     const handleSaveClick = () => {
       props.updateParameter(editingParamIndex, tempValue);
       setEditingParamIndex(null);
       setTempValue(null);
     };
-
+  
     const handleRemoveClick = (index) => {
       props.removeParameter(index);
     };
-
-    return (
-      <table>
-        {props.parameters.map((parameter, index) => {
-          return (
-            <tr key={index}>
-              <th>{parameter.name}</th>
-              <td>
-                {props.isCurrentLaw ? parameter.currentLawValue : editingParamIndex === index ?
-                  <input 
-                    value={tempValue} 
-                    onChange={(e) => setTempValue(e.target.value)}
-                  /> :
-                  parameter.reformValue
-                }
-              </td>
-              {!props.isCurrentLaw &&
-                <td>
-                  <button onClick={() => 
-                    editingParamIndex === index ? 
-                      handleSaveClick() : handleEditClick(index, parameter.reformValue)
-                  }>
-                    {editingParamIndex === index ? 'Save' : 'Edit'}
-                  </button>
-                  <button onClick={() => handleRemoveClick(index)}>
-                    Remove
-                  </button>
-                </td>
-              }
-            </tr>
-          );
-        })}
-      </table>
-    )
-  }
-
-  function PolicyScenario(props) {
-    const [isEditingTitle, setIsEditingTitle] = useState(false);
-    const [title, setTitle] = useState(props.title);
-
-    const [showParameterMenu, setShowParameterMenu] = useState(false);
-
+  
     const addParameter = (newParam) => {
       props.addNewParameter(newParam);
       setShowParameterMenu(false);
@@ -540,41 +529,53 @@ export default function PolicyPage(props) {
           padding: "5px",
           marginBottom: "10px",
           backgroundColor: "lightgray",
-          border: '1px solid '+style.colors.BLUE,
         }}
       >
-        {isEditingTitle ? 
-          <input value={title} onChange={(e) => setTitle(e.target.value)} /> :
-          <b>{title}</b>
-        }
-        {!props.isCurrentLaw ? 
-        <button onClick={() => { 
-          if (isEditingTitle) props.updateTitle(title);
-          setIsEditingTitle(!isEditingTitle);
-        }}>
-            {isEditingTitle ? 'Save' : 'Edit'}
-          </button> : null
-        }
-        {props.isCurrentLaw && props.parameters.length == 0 ?
-          <><br /><i>Add at least one parameter to view current law values.</i></> :
-          <ParameterTable
-            parameters={props.parameters}
-            isCurrentLaw={props.isCurrentLaw}
-            updateParameter={props.updateParameter}
-            removeParameter={props.removeParameter}
-          />
-        }
-        {!props.isCurrentLaw && !showParameterMenu ? 
-          <button onClick={() => setShowParameterMenu(true)}>Add Parameter</button> : 
-          null
-        }
-        {showParameterMenu ? 
+        <table>
+          <thead>
+            <tr>
+              <th>Parameter</th>
+              <th>Current Law</th>
+              <th>
+                {isEditingTitle ? 
+                  <input value={title} onChange={(e) => setTitle(e.target.value)} /> :
+                  <b>{title}</b>
+                }
+              </th>
+              <th>
+                <button onClick={() => { 
+                  if (isEditingTitle) props.updateTitle(title);
+                  setIsEditingTitle(!isEditingTitle);
+                }}>
+                    {isEditingTitle ? 'Save' : 'Edit'}
+                </button>
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {props.parameters.map((parameter, index) => (
+              <ParameterRow
+                parameter={parameter}
+                index={index}
+                isEditing={editingParamIndex === index}
+                tempValue={tempValue}
+                setTempValue={setTempValue}
+                handleEditClick={handleEditClick}
+                handleSaveClick={handleSaveClick}
+                handleRemoveClick={handleRemoveClick}
+              />
+            ))}
+          </tbody>
+        {!showParameterMenu ?
+          <tr>
+            <button onClick={() => setShowParameterMenu(true)}>Add Parameter</button>
+          </tr> : 
           <ParameterMenu 
             addParameter={addParameter} 
             existingParameters={props.parameters} 
-          /> : 
-          null
+          />
         }
+      </table>
       </div>
     );
   }
@@ -790,12 +791,7 @@ export default function PolicyPage(props) {
         <SectionBody
           expanded={true}
         >
-          <PolicyScenario
-            title="Current Law"
-            isCurrentLaw={true}
-            parameters={parameters}
-          />
-          <PolicyScenario
+          <PolicyTable
             title={policyTitle}
             isCurrentLaw={false}
             parameters={parameters}
