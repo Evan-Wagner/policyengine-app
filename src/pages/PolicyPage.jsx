@@ -456,7 +456,7 @@ export default function PolicyPage(props) {
         value="none"
         onChange={(e) => {
           const selectedReform = reformOptions.find(reform => reform.id === e.target.value);
-          props.loadReform({...selectedReform, name: "Untitled"});
+          props.loadReform({...selectedReform, name: selectedReform.id === 'ref00000' ? "Untitled" : selectedReform.name});
         }}
       >
         <option value="none">--</option>
