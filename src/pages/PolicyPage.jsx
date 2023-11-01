@@ -424,159 +424,288 @@ export default function PolicyPage(props) {
     );
   }
 
-  function ParameterMenu({ addParameter, existingParameters }) {
+  function ReformMenu(props) {
+    const reformOptions = [
+      {
+        id: "ref00000",
+        name: "New Reform From Scratch",
+        parameters: [],
+      },
+      {
+        id: "ref00001",
+        name: "Evan's Decree",
+        parameters: [
+          {
+            id: "par00000",
+            name: "Child Tax Credit",
+            currentLawValue: 200,
+            reformValue: 1000,
+          },
+          {
+            id: "par00002",
+            name: "Estate Tax",
+            currentLawValue: 1000,
+            reformValue: 0,
+          }
+        ],
+      },
+    ]
+
+    return (
+      <select
+        value="none"
+        onChange={(e) => {
+          const selectedReform = reformOptions.find(reform => reform.id === e.target.value);
+          props.loadReform({...selectedReform, name: "Untitled"});
+        }}
+      >
+        <option value="none">--</option>
+        {reformOptions.map((reform, index) => (
+          <option
+            key={index}
+            value={reform.id}
+          >
+            {reform.name}
+          </option>
+        ))}
+      </select>
+    )
+  }
+
+  function ParameterMenu(props) {
     const parameterOptions = [
       {
+        id: "par00000",
         name: "Child Tax Credit",
         currentLawValue: 100,
       },
       {
+        id: "par00001",
         name: "Earned Income Tax Credit",
         currentLawValue: 500,
       },
       {
+        id: "par00002",
         name: "Estate Tax",
         currentLawValue: 1000,
       },
       {
+        id: "par00003",
         name: "Income Tax",
         currentLawValue: 200,
       },
-    ].filter(option => !existingParameters.some(param => param.name === option.name));
+    ].filter(option => !props.existingParameters.some(param => param.id === option.id));
 
-    return (
-      <>
-        {parameterOptions.map((parameter, index) => (
-          <tr key={index} 
-              style={{
-                border: '1px solid black', 
-                padding: '5px', 
-                cursor: 'pointer', 
-                marginBottom: '5px'
-              }}
-              onClick={() => addParameter(parameter)}
-              onMouseOver={(e) => e.target.style.backgroundColor = 'lightgray'}
-              onMouseOut={(e) => e.target.style.backgroundColor = ''}
-          >
-            <td>{parameter.name}</td>
-            <td>{parameter.currentLawValue}</td>
-          </tr>
-        ))}
-      </>
-    );
+    return (<>
+      {parameterOptions.map((parameter, index) => (
+        <tr key={index} 
+            style={{
+              cursor: 'pointer',
+            }}
+            onClick={() => props.addParameter(parameter)}
+            onMouseOver={(e) => e.target.style.backgroundColor = '#fff0db'}
+            onMouseOut={(e) => e.target.style.backgroundColor = 'white'}
+        >
+          <td style={{backgroundColor: "white",}}>{parameter.name}</td>
+          <td style={{backgroundColor: "white",}}>{parameter.currentLawValue}</td>
+        </tr>
+      ))}
+    </>);
   }
 
   function ParameterRow(props) {
-    
+    const [isEditing, setIsEditing] = useState(false);
+    const [tempParamValue, setTempParamValue] = useState(props.parameter.reformValue)
+
+    const editParameter = () => {
+      setIsEditing(true);
+    };
+  
+    const saveParameter = () => {
+      props.updateParameter(props.index, tempParamValue);
+      setIsEditing(false);
+      setTempParamValue(null);
+    };
+
     return (
       <tr key={props.index}>
-        <th>{props.parameter.name}</th>
-        <td>{props.parameter.currentLawValue}</td>
-        <td>
-          {props.isEditing ? 
-            <input 
-              value={props.tempValue} 
-              onChange={(e) => props.setTempValue(e.target.value)}
-            /> :
-            props.parameter.reformValue
-          }
+        <td
+          style={{
+            backgroundColor: "#fff0db",
+          }}
+        >
+          {props.parameter.name}
         </td>
-        <td>
-          <button onClick={() => 
-            props.isEditing ? props.handleSaveClick() : props.handleEditClick(props.index, props.parameter.reformValue)
-          }>
-            {props.isEditing ? 'Save' : 'Edit'}
-          </button>
-          <button onClick={() => props.handleRemoveClick(props.index)}>
-            Remove
-          </button>
+        <td
+          style={{
+            backgroundColor: "#fff0db",
+          }}
+        >
+          {props.parameter.currentLawValue}
         </td>
+        {!props.hasReform ? <>
+          <td />
+          <td />
+        </> : <>
+          <td
+            style={{
+              backgroundColor: "#fff0db",
+            }}
+          >
+            {isEditing ? 
+              <input
+                value={tempParamValue} 
+                onChange={(e) => setTempParamValue(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    saveParameter(tempParamValue);
+                  }
+                }}
+                style={{
+                  width: "100%",
+                }}
+              /> :
+              props.parameter.reformValue
+            }
+          </td>
+          <td>
+            <button onClick={() => 
+              isEditing ? saveParameter() : editParameter()
+            }>
+              {isEditing ? '*' : '~'}
+            </button>
+            <button onClick={() => props.removeParameter(props.index)}>
+              x
+            </button>
+          </td>
+        </>}
       </tr>
     );
   }
 
-  function PolicyTable(props) {
-    const [editingParamIndex, setEditingParamIndex] = useState(null);
-    const [tempValue, setTempValue] = useState(null);
-    const [isEditingTitle, setIsEditingTitle] = useState(false);
-    const [title, setTitle] = useState(props.title);
+  function PolicyTable() {
+    const [parameters, setParameters] = useState([]);
     const [showParameterMenu, setShowParameterMenu] = useState(false);
-  
-    const handleEditClick = (index, value) => {
-      setEditingParamIndex(index);
-      setTempValue(value);
-    };
-  
-    const handleSaveClick = () => {
-      props.updateParameter(editingParamIndex, tempValue);
-      setEditingParamIndex(null);
-      setTempValue(null);
-    };
-  
-    const handleRemoveClick = (index) => {
-      props.removeParameter(index);
-    };
+    const [hasReform, setHasReform] = useState(false);
+    const [showReformMenu, setShowReformMenu] = useState(false);
+    const [title, setTitle] = useState('');
+    const [tempTitle, setTempTitle] = useState(title);
+    const [isEditingTitle, setIsEditingTitle] = useState(false);
+
+    const loadReform = (reform) => {
+      setTitle(reform.name);
+      setTempTitle(reform.name);
+      setParameters(Object.values(
+        [...parameters, ...reform.parameters].reduce((acc, cur) => {
+          acc[cur.id] = cur;
+          return acc;
+        }, {})
+      ));
+      setShowReformMenu(false);
+      setHasReform(true);
+    }
+
+    const removeReform = () => {
+      setHasReform(false);
+    }
   
     const addParameter = (newParam) => {
-      props.addNewParameter(newParam);
+      setParameters([...parameters, {...newParam, reformValue: newParam.currentLawValue}]);
       setShowParameterMenu(false);
+    };
+
+    const updateParameter = (index, newValue) => {
+      const updatedParameters = [...parameters];
+      updatedParameters[index].reformValue = newValue;
+      setParameters(updatedParameters);
+    };
+
+    const removeParameter = (index) => {
+      const updatedParameters = [...parameters];
+      updatedParameters.splice(index, 1);
+      setParameters(updatedParameters);
     };
   
     return (
-      <div
+      <table
         style={{
           width: "100%",
-          padding: "5px",
-          marginBottom: "10px",
+          tableLayout: "fixed",
+          borderSpacing: "8px",
+          borderCollapse: "separate",
           backgroundColor: "lightgray",
         }}
       >
-        <table>
-          <thead>
-            <tr>
-              <th>Parameter</th>
-              <th>Current Law</th>
+        <thead>
+          <tr>
+            <th style={{width: "40%",}}>Parameter</th>
+            <th>Current Law</th>
+            {!hasReform ? <>
+              <th>
+                {showReformMenu ?
+                <ReformMenu
+                  loadReform={loadReform}
+                /> :
+                <button onClick={() => setShowReformMenu(true)}>
+                  Add Reform
+                </button>}
+              </th>
+              <th style={{width: "10%",}} />
+            </> : <>
               <th>
                 {isEditingTitle ? 
-                  <input value={title} onChange={(e) => setTitle(e.target.value)} /> :
+                  <input
+                    value={tempTitle}
+                    onChange={(e) => setTempTitle(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        setTitle(tempTitle);
+                        setIsEditingTitle(!isEditingTitle);
+                      }
+                    }}
+                    style={{
+                      width: "100%",
+                    }}
+                  /> :
                   <b>{title}</b>
                 }
               </th>
-              <th>
+              <th style={{width: "10%",}}>
                 <button onClick={() => { 
-                  if (isEditingTitle) props.updateTitle(title);
+                  if (isEditingTitle) setTitle(tempTitle);;
                   setIsEditingTitle(!isEditingTitle);
                 }}>
-                    {isEditingTitle ? 'Save' : 'Edit'}
+                    {isEditingTitle ? '*' : '~'}
+                </button>
+                <button onClick={() => removeReform()}>
+                  x
                 </button>
               </th>
-            </tr>
-          </thead>
-          <tbody>
-            {props.parameters.map((parameter, index) => (
-              <ParameterRow
-                parameter={parameter}
-                index={index}
-                isEditing={editingParamIndex === index}
-                tempValue={tempValue}
-                setTempValue={setTempValue}
-                handleEditClick={handleEditClick}
-                handleSaveClick={handleSaveClick}
-                handleRemoveClick={handleRemoveClick}
-              />
-            ))}
-          </tbody>
-        {!showParameterMenu ?
-          <tr>
-            <button onClick={() => setShowParameterMenu(true)}>Add Parameter</button>
-          </tr> : 
-          <ParameterMenu 
-            addParameter={addParameter} 
-            existingParameters={props.parameters} 
-          />
-        }
+            </>
+            }
+          </tr>
+        </thead>
+        <tbody>
+          {parameters.map((parameter, index) => (
+            <ParameterRow
+              parameter={parameter}
+              index={index}
+              hasReform={hasReform}
+              updateParameter={updateParameter}
+              removeParameter={removeParameter}
+            />
+          ))}
+          {!showParameterMenu ?
+            <tr>
+              <button onClick={() => setShowParameterMenu(true)}>Add Parameter</button>
+            </tr> : 
+            <ParameterMenu 
+              addParameter={addParameter} 
+              existingParameters={parameters} 
+            />
+          }
+        </tbody>
       </table>
-      </div>
     );
   }
 
@@ -584,6 +713,7 @@ export default function PolicyPage(props) {
     return (
       <div
         style={{
+          flex: "1",
           padding: "5px",
           border: "solid 1px black",
         }}
@@ -594,7 +724,7 @@ export default function PolicyPage(props) {
     );
   }
 
-  function CalcSettingsPanel(props) {
+  function CalcSettingsPanel() {
     const [household, setHousehold] = useState("none");
     const [region, setRegion] = useState("all");
     const [metric, setMetric] = useState("budgetaryImpact");
@@ -607,9 +737,9 @@ export default function PolicyPage(props) {
         style={{
           width: "100%",
           display: "flex",
+          justifyContent: "space-between",
           flexDirection: "row",
           padding: "10px",
-          marginBottom: "10px",
           overflow: "hidden",
           overflowX: "auto",
           backgroundColor: "lightgray",
@@ -621,6 +751,7 @@ export default function PolicyPage(props) {
           <select
             value={household}
             onChange={(e) => setHousehold(e.target.value)}
+            style={{width: "100%",}}
           >
             <option value="none">None</option>
             <option value="byAge">My household</option>
@@ -632,6 +763,7 @@ export default function PolicyPage(props) {
           <select
             value={region}
             onChange={(e) => setRegion(e.target.value)}
+            style={{width: "100%",}}
           >
             <option value="all">All</option>
             <option value="alabama">Alabama</option>
@@ -643,6 +775,7 @@ export default function PolicyPage(props) {
         >
           <select
             value={metric}
+            style={{width: "100%",}}
             onChange={(e) => setMetric(e.target.value)}
           >
             {household !== "none" ? <>
@@ -661,11 +794,12 @@ export default function PolicyPage(props) {
             </>}
           </select>
         </CalcSetting>
-        {household !== "none" || metric === "budgetaryImpact" ? null : <CalcSetting
+        {household !== "none" || metric === "budgetaryImpact" ? <div style={{flex: "1",}}/> : <CalcSetting
           title="Grouping"
         >
           <select
             value={grouping}
+            style={{width: "100%",}}
             onChange={(e) => setGrouping(e.target.value)}
           >
             <option value="none">None</option>
@@ -675,12 +809,12 @@ export default function PolicyPage(props) {
             <option value="byIncomeLevel">By income level</option>
           </select>
         </CalcSetting>}
-        {household !== "none" ? null : <CalcSetting
+        {household !== "none" ? <div style={{flex: "1",}}/> : <CalcSetting
           title="Time Period"
         >
           <input
             style={{
-              maxWidth: "52px",
+              maxWidth: "48px",
             }}
             value={startTime}
             onChange={(e) => setStartTime(e.target.value)}
@@ -688,26 +822,13 @@ export default function PolicyPage(props) {
           <span>  to  </span>
           <input
             style={{
-              maxWidth: "52px",
+              maxWidth: "48px",
             }}
             value={endTime}
             onChange={(e) => setEndTime(e.target.value)}
           ></input>
         </CalcSetting>}
       </div>
-    );
-  }
-
-  function ExpandCollapseButton(props) {
-    return (
-      <button 
-        onClick={props.toggleExpand}
-        style={{
-          height: "20px",
-          width: "20px",
-          backgroundColor: props.expanded ? "#FFD700" : "white",
-        }}
-      />
     );
   }
 
@@ -718,28 +839,24 @@ export default function PolicyPage(props) {
           padding: "10px",
           display: "flex",
           justifyContent: "space-between",
-          width: props.title === "Output" && !props.expanded ? "auto" : "100%",
-          height: props.title === "Output" && !props.expanded ? "100%" : "auto",
+          width: "100%",
+          height: "auto",
           backgroundColor: "lightgray",
           fontSize: 30,
         }}
-        onClick={props.toggleExpand}
       >
-        {props.expanded || props.title !== "Output" ? props.title : null}
-        {props.title == "Output" ? <ExpandCollapseButton 
-          expanded={props.expanded} 
-          toggleExpand={props.toggleExpand}
-        /> : null}
+        {props.title}
       </div>
     );
   }
 
   function SectionBody(props) {
-    return (props.expanded ?
+    return (
       <div
         style={{
           flex: 1,
           width: "100%",
+          height: "100%",
           padding: "10px",
           overflow: "hidden",
           overflowY: "auto",
@@ -747,75 +864,16 @@ export default function PolicyPage(props) {
         }}
       >
         {props.children}
-      </div> : null
-    );
-  }
-
-  function LeftColumn() {
-    const [policyTitle, setPolicyTitle] = useState("Untitled Reform");
-
-    const [parameters, setParameters] = useState([]);
-
-    const addNewParameter = (newParam) => {
-      setParameters([...parameters, {...newParam, reformValue: newParam.currentLawValue}]);
-    };
-
-    const updateParameter = (index, newValue) => {
-      const updatedParameters = [...parameters];
-      updatedParameters[index].reformValue = newValue;
-      setParameters(updatedParameters);
-    };
-
-    const removeParameter = (index) => {
-      const updatedParameters = [...parameters];
-      updatedParameters.splice(index, 1);
-      setParameters(updatedParameters);
-    };
-
-    return (
-      <div
-        style={{
-          display: "flex",
-          flex: 1.5,
-          flexDirection: "column",
-          alignItems: "center",
-          gap: "5px",
-          padding: "2.5px",
-          height: "100%",
-          width: "calc(100% - min-content)"
-        }}
-      >
-        <SectionHeader
-          title="Input"
-          />
-        <SectionBody
-          expanded={true}
-        >
-          <PolicyTable
-            title={policyTitle}
-            isCurrentLaw={false}
-            parameters={parameters}
-            updateTitle={setPolicyTitle}
-            addNewParameter={addNewParameter}
-            updateParameter={updateParameter}
-            removeParameter={removeParameter}
-          />
-        </SectionBody>
-        <CalcSettingsPanel
-          
-        />
       </div>
     );
   }
 
-  function RightColumn() {
-    const [outputExpanded, setOutputExpanded] = useState(true);
-
+  function Column(props) {
     return (
       <div
         style={{
           display: "flex",
-          flex: outputExpanded ? 1 : "none",
+          flex: props.flexValue,
           flexDirection: "column",
           alignItems: "center",
           gap: "5px",
@@ -823,16 +881,7 @@ export default function PolicyPage(props) {
           height: "100%",
         }}
       >
-        <SectionHeader
-          title="Output"
-          expanded={outputExpanded}
-          toggleExpand={() => setOutputExpanded(!outputExpanded)}
-          />
-        <SectionBody
-          expanded={outputExpanded}
-        >
-          Charts output here.
-        </SectionBody>
+        {props.children}
       </div>
     );
   }
@@ -850,8 +899,19 @@ export default function PolicyPage(props) {
         fontSize: 18,
       }}
     >
-      <LeftColumn />
-      <RightColumn />
+      <Column flexValue="1.5">
+        <SectionHeader title="Input"/>
+        <SectionBody>
+          <PolicyTable />
+        </SectionBody>
+        <CalcSettingsPanel />
+      </Column>
+      <Column flexValue="1">
+        <SectionHeader title="Output"/>
+        <SectionBody>
+          Charts output here.
+        </SectionBody>
+      </Column>
     </div>
   );
 }
