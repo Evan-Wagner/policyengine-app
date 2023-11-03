@@ -1,4 +1,19 @@
-import { BookOutlined, CloseOutlined, SearchOutlined } from "@ant-design/icons";
+import {
+  BookOutlined,
+  CloseOutlined,
+  DeleteOutlined,
+  DollarOutlined,
+  EditOutlined,
+  GlobalOutlined,
+  HomeOutlined,
+  HourglassOutlined,
+  MinusOutlined,
+  PlusOutlined,
+  PushpinOutlined,
+  SaveOutlined,
+  SearchOutlined,
+  UserOutlined
+} from "@ant-design/icons";
 import { Drawer } from "antd";
 import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
@@ -424,6 +439,18 @@ export default function PolicyPage(props) {
     );
   }
 
+  const [reform, setReform] = useState(null);
+
+  const [household, setHousehold] = useState({
+    region: "none",
+    head: {
+      age: 0,
+      income: 0,
+    },
+    spouse: null,
+    dependents: [],
+  });
+
   function ReformMenu(props) {
     const reformOptions = [
       {
@@ -456,7 +483,7 @@ export default function PolicyPage(props) {
         value="none"
         onChange={(e) => {
           const selectedReform = reformOptions.find(reform => reform.id === e.target.value);
-          props.loadReform({...selectedReform, name: selectedReform.id === 'ref00000' ? "Untitled" : selectedReform.name});
+          props.loadReform({...selectedReform, name: selectedReform.id === 'ref00000' ? "Untitled Reform" : selectedReform.name});
         }}
       >
         <option value="none">--</option>
@@ -519,6 +546,7 @@ export default function PolicyPage(props) {
 
     const editParameter = () => {
       setIsEditing(true);
+      setTempParamValue(props.parameter.reformValue);
     };
   
     const saveParameter = () => {
@@ -531,6 +559,7 @@ export default function PolicyPage(props) {
       <tr key={props.index}>
         <td
           style={{
+            padding: "5px",
             backgroundColor: "#fff0db",
           }}
         >
@@ -538,17 +567,19 @@ export default function PolicyPage(props) {
         </td>
         <td
           style={{
+            padding: "5px",
             backgroundColor: "#fff0db",
           }}
         >
           {props.parameter.currentLawValue}
         </td>
-        {!props.hasReform ? <>
+        {!props.reformLoaded ? <>
           <td />
           <td />
         </> : <>
           <td
             style={{
+              padding: "5px",
               backgroundColor: "#fff0db",
             }}
           >
@@ -572,10 +603,10 @@ export default function PolicyPage(props) {
             <button onClick={() => 
               isEditing ? saveParameter() : editParameter()
             }>
-              {isEditing ? '*' : '~'}
+              {isEditing ? <SaveOutlined /> : <EditOutlined />}
             </button>
             <button onClick={() => props.removeParameter(props.index)}>
-              x
+              <DeleteOutlined />
             </button>
           </td>
         </>}
@@ -586,8 +617,8 @@ export default function PolicyPage(props) {
   function PolicyTable() {
     const [parameters, setParameters] = useState([]);
     const [showParameterMenu, setShowParameterMenu] = useState(false);
-    const [hasReform, setHasReform] = useState(false);
     const [showReformMenu, setShowReformMenu] = useState(false);
+    const [reformLoaded, setReformLoaded] = useState(false);
     const [title, setTitle] = useState('');
     const [tempTitle, setTempTitle] = useState(title);
     const [isEditingTitle, setIsEditingTitle] = useState(false);
@@ -602,11 +633,11 @@ export default function PolicyPage(props) {
         }, {})
       ));
       setShowReformMenu(false);
-      setHasReform(true);
+      setReformLoaded(true);
     }
 
     const removeReform = () => {
-      setHasReform(false);
+      setReformLoaded(false);
     }
   
     const addParameter = (newParam) => {
@@ -638,9 +669,26 @@ export default function PolicyPage(props) {
       >
         <thead>
           <tr>
-            <th style={{width: "40%",}}>Parameter</th>
-            <th>Current Law</th>
-            {!hasReform ? <>
+            <th
+              style={{
+                width: "40%",
+                padding: "5px",
+                color: "white",
+                backgroundColor: style.colors.BLUE,
+              }}
+            >
+              Parameter
+            </th>
+            <th
+              style={{
+                padding: "5px",
+                color: "white",
+                backgroundColor: style.colors.BLUE,
+              }}
+            >
+              Current Law
+            </th>
+            {!reformLoaded ? <>
               <th>
                 {showReformMenu ?
                 <ReformMenu
@@ -650,9 +698,15 @@ export default function PolicyPage(props) {
                   Add Reform
                 </button>}
               </th>
-              <th style={{width: "10%",}} />
+              <th style={{width: "70px",}} />
             </> : <>
-              <th>
+              <th
+                style={{
+                  padding: "5px",
+                  color: "white",
+                  backgroundColor: style.colors.TEAL_ACCENT,
+                }}
+              >
                 {isEditingTitle ? 
                   <input
                     value={tempTitle}
@@ -665,20 +719,21 @@ export default function PolicyPage(props) {
                     }}
                     style={{
                       width: "100%",
+                      color: "black",
                     }}
                   /> :
                   <b>{title}</b>
                 }
               </th>
-              <th style={{width: "10%",}}>
+              <th style={{width: "70px",}}>
                 <button onClick={() => { 
-                  if (isEditingTitle) setTitle(tempTitle);;
+                  if (isEditingTitle) setTitle(tempTitle);
                   setIsEditingTitle(!isEditingTitle);
                 }}>
-                    {isEditingTitle ? '*' : '~'}
+                    {isEditingTitle ? <SaveOutlined /> : <EditOutlined />}
                 </button>
                 <button onClick={() => removeReform()}>
-                  x
+                  <DeleteOutlined />
                 </button>
               </th>
             </>
@@ -689,15 +744,18 @@ export default function PolicyPage(props) {
           {parameters.map((parameter, index) => (
             <ParameterRow
               parameter={parameter}
+              key={index}
               index={index}
-              hasReform={hasReform}
+              reformLoaded={reformLoaded}
               updateParameter={updateParameter}
               removeParameter={removeParameter}
             />
           ))}
           {!showParameterMenu ?
             <tr>
-              <button onClick={() => setShowParameterMenu(true)}>Add Parameter</button>
+              <td>
+                <button onClick={() => setShowParameterMenu(true)}>Add Parameter</button>
+              </td>
             </tr> : 
             <ParameterMenu 
               addParameter={addParameter} 
@@ -713,8 +771,8 @@ export default function PolicyPage(props) {
     return (
       <div
         style={{
-          flex: "1",
           padding: "5px",
+          flex: 1,
           border: "solid 1px black",
         }}
       >
@@ -724,10 +782,203 @@ export default function PolicyPage(props) {
     );
   }
 
-  function CalcSettingsPanel() {
-    const [household, setHousehold] = useState("none");
-    const [region, setRegion] = useState("all");
-    const [metric, setMetric] = useState("budgetaryImpact");
+  function HouseholdPanel(props) {
+    const [isEditing, setIsEditing] = useState(false);
+    const [tempHousehold, setTempHousehold] = useState(props.household);
+
+    const editHousehold = () => {
+      setTempHousehold(props.household);
+      setIsEditing(true);
+    }
+
+    const saveHousehold = () => {
+      props.setHousehold(tempHousehold);
+      setIsEditing(false);
+      props.setIsInHouseholdMode(true);
+    }
+
+    return (
+      <div
+        style={{
+          padding: "5px",
+          flex: 3,
+          display: "flex",
+          flexDirection: "row",
+          gap: "10px",
+          border: "solid 1px black",
+          minWidth: 0,
+        }}
+      >
+        <div
+          style={{
+            minWidth: "fit-content",
+          }}
+        >
+          <b>Household</b><br />
+          <PushpinOutlined /><span>
+            {isEditing ?
+            <select
+              value={tempHousehold.region}
+              onChange={(e) => (setTempHousehold({...tempHousehold, region: e.target.value}))}
+            >
+              <option value="none">--</option>
+              <option value="alabama">Alabama</option>
+              <option value="wisconsin">Wisconsin</option>
+              <option value="wyoming">Wyoming</option>
+            </select> : 
+            props.household.region
+            }
+          </span><br />
+          {isEditing ?
+            <button onClick={() => saveHousehold()}>
+              <SaveOutlined /> 
+            </button> :
+            <button onClick={() => editHousehold()}>
+              <EditOutlined />
+            </button>}
+        </div>
+        <div
+          style={{
+            borderRight: "1px solid black",
+            paddingRight: "5px",
+          }}
+        >
+          <UserOutlined /><br />
+          <HourglassOutlined /><br />
+          <DollarOutlined />
+        </div>
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "row",
+            gap: "10px",
+            overflow: "hidden",
+            overflowX: "auto",
+            minWidth: 0,
+          }}
+        >
+          <div
+            style={{
+              borderRight: "1px solid black",
+              paddingRight: "5px",
+            }}
+          >
+            <b>Head</b><br />
+            {isEditing ? <>
+            <input
+              style={{maxWidth: "30px",}}
+              value={tempHousehold.head.age}
+              onChange={(e) => (setTempHousehold({...tempHousehold, head: {...tempHousehold.head, age: e.target.value}}))}
+            /><br />
+            <input
+              style={{maxWidth: "30px",}}
+              value={tempHousehold.head.income}
+              onChange={(e) => (setTempHousehold({...tempHousehold, head: {...tempHousehold.head, income: e.target.value}}))}
+            />
+            </> : <>
+              {props.household.head.age}y<br />
+              {props.household.head.income}
+            </>}
+          </div>
+          {tempHousehold.spouse ? <div
+            style={{
+              borderRight: "1px solid black",
+              paddingRight: "5px",
+            }}
+          >
+            <b>Spouse </b>
+            {isEditing ? <button onClick={() => setTempHousehold({...tempHousehold, spouse: null})}>
+              <MinusOutlined />
+            </button> : null}
+            <br />
+            {isEditing ? <>
+              <input
+                style={{maxWidth: "30px",}}
+                value={tempHousehold.spouse.age}
+                onChange={(e) => (setTempHousehold({...tempHousehold, spouse: {...tempHousehold.spouse, age: e.target.value}}))}
+              /><br />
+              <input
+                style={{maxWidth: "30px",}}
+                value={tempHousehold.spouse.income}
+                onChange={(e) => (setTempHousehold({...tempHousehold, spouse: {...tempHousehold.spouse, income: e.target.value}}))}
+              />
+            </> : <>
+              {props.household.spouse.age}y<br />
+              {props.household.spouse.income}
+            </>}
+          </div> : isEditing ? <div>
+            <button onClick={() => setTempHousehold({...tempHousehold, spouse: {age: 0, income: 0}})}>
+              <PlusOutlined /> Spouse
+            </button>
+          </div> : null}
+          {tempHousehold.dependents.length > 0 ? <div>
+            <b>Dependents </b>
+            {isEditing ? <button onClick={() => setTempHousehold({...tempHousehold, dependents: tempHousehold.dependents.concat({age: 0, income: 0})})}>
+                <PlusOutlined />
+              </button> : null}
+            <br />
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "row",
+                gap: "10px",
+              }}
+            >
+              <br />
+              {tempHousehold.dependents.map((dependent, index) => (
+                <div
+                  key={index}
+                  style={{
+                    borderRight: "1px solid black",
+                    paddingRight: "5px",
+                  }}
+                >
+                  {isEditing ? <>
+                    <input
+                      style={{maxWidth: "30px",}}
+                      value={dependent.age}
+                      onChange={(e) => setTempHousehold({
+                        ...tempHousehold,
+                        dependents: tempHousehold.dependents.map((d, i) => {
+                          return i === index ? {...d, age: e.target.value} : d
+                        })
+                      })}
+                    />
+                    <button onClick={() => setTempHousehold({...tempHousehold, dependents: tempHousehold.dependents.filter((_, i) => i !== index)})}>
+                      <MinusOutlined />
+                    </button>
+                    <br />
+                    <input
+                      style={{maxWidth: "30px",}}
+                      value={dependent.income}
+                      onChange={(e) => setTempHousehold({
+                        ...tempHousehold,
+                        dependents: tempHousehold.dependents.map((d, i) => {
+                          return i === index ? {...d, income: e.target.value} : d
+                        })
+                      })}
+                    />
+                  </> : <>
+                    {dependent.age}y<br />
+                    {dependent.income}
+                  </>}
+                </div>
+              ))}
+            </div>
+          </div> : isEditing ? <div>
+            <button onClick={() => setTempHousehold({...tempHousehold, dependents: [{age: 0, income: 0}]})}>
+              <PlusOutlined /> Dependents
+            </button>
+          </div> : null}
+        </div>
+      </div>
+    );
+  }
+
+  function CalcPanel(props) {
+    const [isInHouseholdMode, setIsInHouseholdMode] = useState(false);
+    const [region, setRegion] = useState("none");
+    const [metric, setMetric] = useState("none");
     const [grouping, setGrouping] = useState("none");
     const [startTime, setStartTime] = useState("2024");
     const [endTime, setEndTime] = useState("2027");
@@ -741,44 +992,26 @@ export default function PolicyPage(props) {
           flexDirection: "row",
           padding: "10px",
           overflow: "hidden",
-          overflowX: "auto",
+          overflowX: "scroll",
           backgroundColor: "lightgray",
         }}
       >
-        <CalcSetting
-          title="Household"
+        <button
+          style={{
+            minWidth: "72px",
+          }}
+          onClick={() => setIsInHouseholdMode(!isInHouseholdMode)}
         >
-          <select
-            value={household}
-            onChange={(e) => setHousehold(e.target.value)}
-            style={{width: "100%",}}
-          >
-            <option value="none">None</option>
-            <option value="byAge">My household</option>
-          </select>
-        </CalcSetting>
-        <CalcSetting
-          title="Region"
-        >
-          <select
-            value={region}
-            onChange={(e) => setRegion(e.target.value)}
-            style={{width: "100%",}}
-          >
-            <option value="all">All</option>
-            <option value="alabama">Alabama</option>
-            <option value="wyoming">Wyoming</option>
-          </select>
-        </CalcSetting>
-        <CalcSetting
-          title="Metric"
-        >
+          {isInHouseholdMode ? <HomeOutlined /> : <GlobalOutlined />}
+        </button>
+        <CalcSetting title="Metric" flex="1">
           <select
             value={metric}
             style={{width: "100%",}}
             onChange={(e) => setMetric(e.target.value)}
           >
-            {household !== "none" ? <>
+            <option value="none">--</option>
+            {isInHouseholdMode ? <>
               <option value="netIncome">Net income</option>
               <option value="earningsVariation">Earnings variation</option>
               <option value="marginalTaxRate">Marginal tax rate</option>
@@ -794,40 +1027,55 @@ export default function PolicyPage(props) {
             </>}
           </select>
         </CalcSetting>
-        {household !== "none" || metric === "budgetaryImpact" ? <div style={{flex: "1",}}/> : <CalcSetting
-          title="Grouping"
-        >
-          <select
-            value={grouping}
-            style={{width: "100%",}}
-            onChange={(e) => setGrouping(e.target.value)}
-          >
-            <option value="none">None</option>
-            <option value="byAge">By age</option>
-            <option value="bySex">By gender</option>
-            <option value="byRace">By race</option>
-            <option value="byIncomeLevel">By income level</option>
-          </select>
-        </CalcSetting>}
-        {household !== "none" ? <div style={{flex: "1",}}/> : <CalcSetting
-          title="Time Period"
-        >
-          <input
-            style={{
-              maxWidth: "48px",
-            }}
-            value={startTime}
-            onChange={(e) => setStartTime(e.target.value)}
-          ></input>
-          <span>  to  </span>
-          <input
-            style={{
-              maxWidth: "48px",
-            }}
-            value={endTime}
-            onChange={(e) => setEndTime(e.target.value)}
-          ></input>
-        </CalcSetting>}
+        {isInHouseholdMode ? <HouseholdPanel 
+          household={props.household}
+          setHousehold={props.setHousehold}
+          setIsInHouseholdMode={setIsInHouseholdMode}
+        /> : <>
+          <CalcSetting title="Grouping" flex="1">
+            <select
+              value={metric === "budgetaryImpact" ? "none" : grouping}
+              disabled={["none", "budgetaryImpact", "cliffImpact"].includes(metric)}
+              style={{width: "100%",}}
+              onChange={(e) => setGrouping(e.target.value)}
+            >
+              <option value="none">--</option>
+              <option value="byAge">By age</option>
+              <option value="bySex">By sex</option>
+              <option value="byRace">By race</option>
+              <option value="byIncomeLevel">By income level</option>
+            </select>
+          </CalcSetting>
+          <CalcSetting title="Region" flex="1">
+            <select
+              value={metric === "budgetaryImpact" ? "none" : region}
+              disabled={["none", "budgetaryImpact", "cliffImpact"].includes(metric)}
+              style={{width: "100%",}}
+              onChange={(e) => setRegion(e.target.value)}
+            >
+              <option value="none">--</option>
+              <option value="alabama">Alabama</option>
+              <option value="wyoming">Wyoming</option>
+            </select>
+          </CalcSetting>
+          <CalcSetting title="Time Period" flex="1">
+            <input
+              style={{
+                maxWidth: "48px",
+              }}
+              value={startTime}
+              onChange={(e) => setStartTime(e.target.value)}
+            ></input>
+            <span>  to  </span>
+            <input
+              style={{
+                maxWidth: "48px",
+              }}
+              value={endTime}
+              onChange={(e) => setEndTime(e.target.value)}
+            ></input>
+          </CalcSetting>
+        </>}
       </div>
     );
   }
@@ -902,9 +1150,15 @@ export default function PolicyPage(props) {
       <Column flexValue="1.5">
         <SectionHeader title="Input"/>
         <SectionBody>
-          <PolicyTable />
+          <PolicyTable
+            reform={reform}
+            setReform={setReform}
+          />
         </SectionBody>
-        <CalcSettingsPanel />
+        <CalcPanel
+          household={household}
+          setHousehold={setHousehold}
+        />
       </Column>
       <Column flexValue="1">
         <SectionHeader title="Output"/>
