@@ -14,7 +14,7 @@ import PrivacyPage from "./pages/PrivacyPage";
 import ResearchPage from "./pages/ResearchPage";
 
 const HouseholdPage = lazy(() => import("./pages/HouseholdPage"));
-const PolicyPage = lazy(() => import("./pages/PolicyPage"));
+const PolicyPage = lazy(() => import("./pages/CalculatorPage"));
 const BlogPostPage = lazy(() => import("./pages/BlogPage"));
 const DonatePage = lazy(() => import("./pages/DonatePage"));
 

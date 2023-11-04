@@ -22,7 +22,7 @@ import CitizensEconomicCouncil from "./CitizensEconomicCouncil";
 import loc_en from "../../plotly_locales/locale-en.js";
 import loc_en_us from "../../plotly_locales/locale-en-us.js";
 
-const PolicyPage = lazy(() => import("../../pages/PolicyPage"));
+const PolicyPage = lazy(() => import("../../pages/CalculatorPage"));
 const HouseholdPage = lazy(() => import("../../pages/HouseholdPage"));
 
 function ScrollToTop() {
