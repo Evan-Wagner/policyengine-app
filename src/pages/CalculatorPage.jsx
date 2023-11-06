@@ -522,7 +522,7 @@ export default function PolicyPage(props) {
         fontSize: 18,
       }}
     >
-      <Column flexValue="1.5">
+      <Column flexValue="1.2">
         <SectionHeader title="Input"/>
         <SectionBody>
           <PolicyTable

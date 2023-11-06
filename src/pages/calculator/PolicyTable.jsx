@@ -98,6 +98,7 @@ const ReformHeader = (props) => {
                 width: "100%",
                 display: "flex",
                 justifyContent: "space-between",
+                gap: "5px",
                 padding: "8px",
             }}
         >
@@ -124,7 +125,7 @@ const ReformHeader = (props) => {
                         />
                         : <b>{props.reform.title}</b>
                     }
-                    <div>
+                    <div style={{minWidth: "fit-content"}}>
                         <ToggleEditSaveButton
                             isEditing={props.isEditingReform}
                             edit={editReform}

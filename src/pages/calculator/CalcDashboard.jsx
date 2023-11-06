@@ -128,21 +128,36 @@ const TimePeriodPanel = (props) => {
 
   return (
     <CalcPanel title="Time Period">
-      <Input
-        style={{
-          maxWidth: "56px",
-        }}
-        value={props.calcSettings.startTime}
-        onChange={(e) => props.setCalcSettings({...props.calcSettings, startTime: e.target.value})}
-      ></Input>
-      <span> to </span>
-      <Input
-        style={{
-          maxWidth: "56px",
-        }}
-        value={props.calcSettings.endTime}
-        onChange={(e) => props.setCalcSettings({...props.calcSettings, endTime: e.target.value})}
-      ></Input>
+      <table>
+        <tr>
+          <td>
+            <span>Start </span>
+          </td>
+          <td>
+            <Input
+              style={{
+                maxWidth: "56px",
+              }}
+              value={props.calcSettings.startTime}
+              onChange={(e) => props.setCalcSettings({...props.calcSettings, startTime: e.target.value})}
+            ></Input>
+          </td>
+        </tr>
+        <tr>
+          <td>
+          <span>End </span>
+          </td>
+          <td>
+            <Input
+              style={{
+                maxWidth: "56px",
+              }}
+              value={props.calcSettings.endTime}
+              onChange={(e) => props.setCalcSettings({...props.calcSettings, endTime: e.target.value})}
+            ></Input>
+          </td>
+        </tr>
+      </table>
     </CalcPanel>
   );
 }
@@ -445,7 +460,7 @@ export default function CalcDashboard(props) {
         }}
       >
         <ToggleHouseholdModeButton
-          style={{height: "100%", width: "100px"}}
+          style={{height: "112px", width: "112px"}}
           isInHouseholdMode={props.isInHouseholdMode}
           toggle={() => props.setIsInHouseholdMode(!props.isInHouseholdMode)}
         />
