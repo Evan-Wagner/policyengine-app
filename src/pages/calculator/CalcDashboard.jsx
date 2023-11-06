@@ -2,16 +2,150 @@ import { useState } from "react";
 import {
   AddButton,
   RemoveButton,
-  ToggleEditSaveButton
-} from "./buttons";
+  ToggleEditSaveButton,
+  ToggleHouseholdModeButton
+} from "./controls";
 import {
   DollarOutlined,
-  GlobalOutlined,
-  HomeOutlined,
   HourglassOutlined,
   PushpinOutlined,
   UserOutlined
 } from "@ant-design/icons";
+import {
+  Input,
+  Select
+} from "antd";
+
+const CalcPanel = (props) => {
+  return (
+      <div
+          style={{
+              padding: "5px",
+              flex: 1,
+              border: "solid 1px black",
+          }}
+      >
+          <b>{props.title}</b><br />
+          {props.children}
+      </div>
+  );
+}
+
+const MetricPanel = (props) => {
+  const options = props.inInHouseholdMode
+    ? [
+        {value: "none", label: "--"},
+        {value: "netIncome", label: "Net income"},
+        {value: "earningsVariation", label: "Earnings variation"},
+        {value: "marginalTaxRate", label: "Marginal tax rate"}
+    ]
+    : [
+        {value: "none", label: "--"},
+        {value: "budgetary", label: "Budgetary impact"},
+        {value: "outcomes", label: "Outcomes"},
+        {value: "netIncomeAbsolute", label: "Net income (absolute)"},
+        {value: "netIncomeRelative", label: "Net income (relative)"},
+        {value: "cliff", label: "Net income cliffs"},
+        {value: "poverty", label: "Poverty rate"},
+        {value: "deepPoverty", label: "Deep poverty rate"},
+        {value: "incomeInequality", label: "Income inequality"},
+    ];
+
+  return (
+    <CalcPanel title="Metric">
+      <Select
+        options={options}
+        defaultValue={props.calcSettings.metric}
+        style={{width: "100%",}}
+        onSelect={(value) => props.setCalcSettings({...props.calcSettings, metric: value})}
+      />
+    </CalcPanel>
+  )
+}
+
+const GroupingPanel = (props) => {
+  const options = [
+        {value: "none", label: "--"},
+        {value: "byAge", label: "By age"},
+        {value: "bySex", label: "By sex"},
+        {value: "byRace", label: "By race"},
+        {value: "byIncomeLevel", label: "By income level"},
+    ];
+
+  return (
+    <CalcPanel title="Grouping">
+      <Select
+        options={options}
+        defaultValue={props.calcSettings.metric === "budgetary" ? "none" : props.calcSettings.grouping}
+        disabled={["none", "budgetary", "cliff"].includes(props.calcSettings.metric)}
+        style={{width: "100%",}}
+        onSelect={(value) => props.setCalcSettings({...props.calcSettings, grouping: value})}
+      />
+    </CalcPanel>
+  );
+}
+
+const RegionPanel = (props) => {
+  const options = [
+    {value: "none", label: "--"},
+    {value: "alabama", label: "Alabama"},
+    {value: "wisconsin", label: "Wisconsin"},
+    {value: "wyoming", label: "Wyoming"}
+  ];
+
+  return (
+    <CalcPanel title="Region">
+      <Select
+        options={options}
+        defaultValue={props.calcSettings.region}
+        disabled={["none", "budgetary", "cliff"].includes(props.calcSettings.metric)}
+        style={{width: "100%",}}
+        onSelect={(value) => props.setCalcSettings({...props.calcSettings, region: value})}
+      />
+    </CalcPanel>
+  )
+}
+
+const TimePeriodPanel = (props) => {
+  const options = props.inInHouseholdMode
+    ? [
+        {value: "none", label: "--"},
+        {value: "netIncome", label: "Net income"},
+        {value: "earningsVariation", label: "Earnings variation"},
+        {value: "marginalTaxRate", label: "Marginal tax rate"}
+    ]
+    : [
+        {value: "none", label: "--"},
+        {value: "budgetary", label: "Budgetary impact"},
+        {value: "outcomes", label: "Outcomes"},
+        {value: "netIncomeAbsolute", label: "Net income (absolute)"},
+        {value: "netIncomeRelative", label: "Net income (relative)"},
+        {value: "cliff", label: "Net income cliffs"},
+        {value: "poverty", label: "Poverty rate"},
+        {value: "deepPoverty", label: "Deep poverty rate"},
+        {value: "incomeInequality", label: "Income inequality"},
+    ];
+
+  return (
+    <CalcPanel title="Time Period">
+      <Input
+        style={{
+          maxWidth: "56px",
+        }}
+        value={props.calcSettings.startTime}
+        onChange={(e) => props.setCalcSettings({...props.calcSettings, startTime: e.target.value})}
+      ></Input>
+      <span> to </span>
+      <Input
+        style={{
+          maxWidth: "56px",
+        }}
+        value={props.calcSettings.endTime}
+        onChange={(e) => props.setCalcSettings({...props.calcSettings, endTime: e.target.value})}
+      ></Input>
+    </CalcPanel>
+  );
+}
 
 const HouseholdInput = (props) => {
   const label = Object.keys(props.obj)[0];
@@ -32,7 +166,7 @@ const HouseholdInput = (props) => {
   }
 
   return (
-    <input
+    <Input
       style={{maxWidth: "1.2in",}}
       value={props.obj[label][key]}
       onChange={(e) => handleChange(e)}
@@ -41,37 +175,26 @@ const HouseholdInput = (props) => {
 }
 
 const HouseholdRegionSelect = (props) => {
+  const options = [
+    {value: "none", label: "--"},
+    {value: "alabama", label: "Alabama"},
+    {value: "wisconsin", label: "Wisconsin"},
+    {value: "wyoming", label: "Wyoming"}
+  ];
+
   return (
-    <select
-      value={props.tempHousehold.region.value}
-      onChange={(e) => (props.setTempHousehold({
+    <Select
+      options={options}
+      style={{minWidth: "100px",}}
+      defaultValue={props.tempHousehold.region.value}
+      onSelect={(value) => (props.setTempHousehold({
         ...props.tempHousehold,
         region: {
-          value: e.target.value,
-          label: e.target.selectedOptions[0].label
+          value: value,
+          label: options.find(o => o.value === value).label
         }
       }))}
-    >
-      <option value="none">--</option>
-      <option value="alabama">Alabama</option>
-      <option value="wisconsin">Wisconsin</option>
-      <option value="wyoming">Wyoming</option>
-    </select>
-  );
-}
-
-const CalcPanel = (props) => {
-  return (
-      <div
-          style={{
-              padding: "5px",
-              flex: 1,
-              border: "solid 1px black",
-          }}
-      >
-          <b>{props.title}</b><br />
-          {props.children}
-      </div>
+    />
   );
 }
 
@@ -166,6 +289,7 @@ const DependentsPanel = (props) => {
       {props.tempHousehold.dependents.length > 0 ? <b>Dependents </b> : null}
       {props.isEditing
         ? <AddButton
+            style={props.tempHousehold.dependents.length > 0 ? {width: "36px", padding: "0px"} : null}
             label={props.tempHousehold.dependents.length > 0 ? "" : "Dependents"}
             add={addDependent}
           />
@@ -320,86 +444,37 @@ export default function CalcDashboard(props) {
           backgroundColor: "lightgray",
         }}
       >
-        <button
-          style={{
-            minWidth: "72px",
-          }}
-          onClick={() => props.setIsInHouseholdMode(!props.isInHouseholdMode)}
-        >
-          {props.isInHouseholdMode ? <HomeOutlined /> : <GlobalOutlined />}
-        </button>
-        <CalcPanel title="Metric">
-          <select
-            value={props.calcSettings.metric}
-            style={{width: "100%",}}
-            onChange={(e) => props.setCalcSettings({...props.calcSettings, metric: e.target.value})}
-          >
-            <option value="none">--</option>
-            {props.isInHouseholdMode ? <>
-              <option value="netIncome">Net income</option>
-              <option value="earningsVariation">Earnings variation</option>
-              <option value="marginalTaxRate">Marginal tax rate</option>
-            </> : <>
-              <option value="budgetaryImpact">Budgetary impact</option>
-              <option value="outcomes">Outcomes</option>
-              <option value="netIncomeAbsolute">Net income (absolute)</option>
-              <option value="netIncomeRelative">Net income (relative)</option>
-              <option value="cliffImpact">Net income cliffs</option>
-              <option value="povertyImpact">Poverty rate</option>
-              <option value="deepPovertyImpact">Deep poverty rate</option>
-              <option value="incomeInequalityImpact">Income inequality</option>
-            </>}
-          </select>
-        </CalcPanel>
-        {props.isInHouseholdMode ? <HouseholdPanel 
-          household={props.household}
-          setHousehold={props.setHousehold}
-          setIsInHouseholdMode={props.setIsInHouseholdMode}
-        /> : <>
-          <CalcPanel title="Grouping">
-            <select
-              value={props.calcSettings.metric === "budgetaryImpact" ? "none" : props.calcSettings.grouping}
-              disabled={["none", "budgetaryImpact", "cliffImpact"].includes(props.calcSettings.metric)}
-              style={{width: "100%",}}
-              onChange={(e) => props.setCalcSettings({...props.calcSettings, grouping: e.target.value})}
-            >
-              <option value="none">--</option>
-              <option value="byAge">By age</option>
-              <option value="bySex">By sex</option>
-              <option value="byRace">By race</option>
-              <option value="byIncomeLevel">By income level</option>
-            </select>
-          </CalcPanel>
-          <CalcPanel title="Region">
-            <select
-              value={props.calcSettings.metric === "budgetaryImpact" ? "none" : props.calcSettings.region}
-              disabled={["none", "budgetaryImpact", "cliffImpact"].includes(props.calcSettings.metric)}
-              style={{width: "100%",}}
-              onChange={(e) => props.setCalcSettings({...props.calcSettings, region: e.target.value})}
-            >
-              <option value="none">--</option>
-              <option value="alabama">Alabama</option>
-              <option value="wyoming">Wyoming</option>
-            </select>
-          </CalcPanel>
-          <CalcPanel title="Time Period">
-            <input
-              style={{
-                maxWidth: "48px",
-              }}
-              value={props.calcSettings.startTime}
-              onChange={(e) => props.setCalcSettings({...props.calcSettings, startTime: e.target.value})}
-            ></input>
-            <span>  to  </span>
-            <input
-              style={{
-                maxWidth: "48px",
-              }}
-              value={props.calcSettings.endTime}
-              onChange={(e) => props.setCalcSettings({...props.calcSettings, endTime: e.target.value})}
-            ></input>
-          </CalcPanel>
-        </>}
+        <ToggleHouseholdModeButton
+          style={{height: "100%", width: "100px"}}
+          isInHouseholdMode={props.isInHouseholdMode}
+          toggle={() => props.setIsInHouseholdMode(!props.isInHouseholdMode)}
+        />
+        <MetricPanel
+          isInHouseholdMode={props.isInHouseholdMode}
+          calcSettings={props.calcSettings}
+          setCalcSettings={props.setCalcSettings}
+        />
+        {props.isInHouseholdMode
+          ? <HouseholdPanel 
+              household={props.household}
+              setHousehold={props.setHousehold}
+              setIsInHouseholdMode={props.setIsInHouseholdMode}
+            />
+          : <>
+              <GroupingPanel
+                calcSettings={props.calcSettings}
+                setCalcSettings={props.setCalcSettings}
+              />
+              <RegionPanel
+                calcSettings={props.calcSettings}
+                setCalcSettings={props.setCalcSettings}
+              />
+              <TimePeriodPanel
+                calcSettings={props.calcSettings}
+                setCalcSettings={props.setCalcSettings}
+              />
+            </>
+        }
       </div>
     );
 }

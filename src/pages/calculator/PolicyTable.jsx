@@ -1,21 +1,43 @@
-import { useState, useEffect } from "react";
+import {
+    useEffect,
+    useState,
+} from "react";
 import {
     AddButton,
     RemoveButton,
+    SearchSelect,
     ToggleEditSaveButton
- } from "./buttons";
+} from "./controls";
 import style from "../../style";
+
+const parameterOptions = [
+    {
+        id: "par00000",
+        label: "Child Tax Credit",
+        currentLawValue: 100,
+    },
+    {
+        id: "par00001",
+        label: "Earned Income Tax Credit",
+        currentLawValue: 500,
+    },
+    {
+        id: "par00002",
+        label: "Estate Tax",
+        currentLawValue: 1000,
+    },
+    {
+        id: "par00003",
+        label: "Income Tax",
+        currentLawValue: 200,
+    },
+];
 
 const ReformMenu = (props) => {
     const reformOptions = [
         {
-            id: "ref00000",
-            name: "New Reform From Scratch",
-            parameters: [],
-        },
-        {
             id: "ref00001",
-            name: "Evan's Decree",
+            title: "Evan's Decree",
             parameters: [
                 {
                     id: "par00000",
@@ -25,36 +47,147 @@ const ReformMenu = (props) => {
                     id: "par00002",
                     reformValue: 0,
                 }
-        ],
+            ],
         },
     ]
+    
+    const formattedOptions = reformOptions.map(option => ({value: option.id, label: option.title}));
 
     return (
-        <select
-            value="none"
-            onChange={(e) => {
-                const selectedReform = reformOptions.find(reform => reform.id === e.target.value);
+        <SearchSelect
+            options={formattedOptions}
+            defaultValue={null}
+            style={{ margin: 0, width: "50%" }}
+            placeholder="Search for a reform"
+            onSelect={(value) => {
+                const selectedReform = reformOptions.find(reform => reform.id === value);
                 props.loadReform({
                     ...selectedReform,
-                    name: selectedReform.id === 'ref00000' ? "Untitled Reform" : selectedReform.name
+                    title: selectedReform.id === 'ref00000' ? "Untitled Reform" : selectedReform.title
                 });
             }}
+        />
+    );
+}
+
+const ReformHeader = (props) => {
+    const [showReformMenu, setShowReformMenu] = useState(false);
+
+    const openReformMenu = () => {
+        setShowReformMenu(true);
+    }
+    
+    const loadReform = (reform) => {
+        props.setReform(reform);
+        props.setParameters(reform.parameters.map(p => props.parameterOptions.find(o => o.id === p.id)));
+        setShowReformMenu(false);
+    }      
+
+    const editReform = () => {
+        props.setTempReform(props.reform);
+        props.setIsEditingReform(true);
+    }
+
+    const removeReform = () => {
+        props.setReform(null);
+    }
+
+    return (
+        <div
+            style={{
+                width: "100%",
+                display: "flex",
+                justifyContent: "space-between",
+                padding: "8px",
+            }}
         >
-            <option value="none">--</option>
-            {reformOptions.map((reform, index) => (
-                <option
-                    key={index}
-                    value={reform.id}
+            {!props.reform
+                ? <>
+                    <AddButton
+                        style={{width: "50%",}}
+                        label={"Build reform from scratch"}
+                        add={() => loadReform({title: "Untitled Reform", id: "newref", parameters: []})}
+                    />
+                    <ReformMenu
+                        loadReform={loadReform}
+                    />
+                </>
+                : <>{props.isEditingReform
+                        ? <input
+                            value={props.tempReform.title}
+                            onChange={(e) => props.modifyTempReform({title: e.target.value})}
+                            onKeyDown={(e) => {if (e.key === 'Enter') props.saveReform();}}
+                            style={{
+                                width: "100%",
+                                color: "black",
+                            }}
+                        />
+                        : <b>{props.reform.title}</b>
+                    }
+                    <div>
+                        <ToggleEditSaveButton
+                            isEditing={props.isEditingReform}
+                            edit={editReform}
+                            save={props.saveReform} />
+                        <RemoveButton
+                            id={null}
+                            remove={removeReform} />
+                    </div>
+                </>
+            }
+        </div>
+    );
+}
+
+const HeaderRow = (props) => {
+    return (
+        <tr>
+            <th
+                style={{
+                    padding: "5px",
+                    color: "white",
+                    backgroundColor: style.colors.BLUE,
+                }}
+            >
+                Parameter
+            </th>
+            <th
+                style={{
+                    width: "100px",
+                    padding: "5px",
+                    color: "white",
+                    backgroundColor: style.colors.BLUE,
+                }}
+            >
+                Current
+            </th>
+            {!props.reform ? <>
+                <th style={{width: "100px",}}/>
+                <th style={{width: "36px",}}/>
+            </> : <>
+                <th
+                    style={{
+                        width: "100px",
+                        padding: "5px",
+                        color: "white",
+                        backgroundColor: style.colors.TEAL_ACCENT,
+                    }}
                 >
-                {reform.name}
-                </option>
-            ))}
-        </select>
-    )
+                    Reform
+                </th>
+                <th style={{width: "36px",}} />
+            </>}
+        </tr>
+    );
 }
 
 const ParameterRow = (props) => {
     const [tempReformValue, setTempReformValue] = useState(null);
+
+    const removeParameter = (id) => {
+        const updatedParameters = props.parameters.filter((p) => p.id !== id);
+        props.setParameters(updatedParameters);
+    };
 
     const handleMouseOver = (e) => {
         if (e.target.localName == "td") {
@@ -99,7 +232,7 @@ const ParameterRow = (props) => {
                     backgroundColor: "white",
                 }}
             >
-                {props.parameter.name}
+                {props.parameter.label}
             </td>
             <td
                 className={"data"}
@@ -119,7 +252,7 @@ const ParameterRow = (props) => {
                         backgroundColor: "white",
                     }}
                 >
-                    {props.isEditing
+                    {props.isEditingReform
                     ? <input
                         value={tempReformValue} 
                         onChange={(e) => props.modifyTempReform({id: props.parameter.id, reformValue: e.target.value})}
@@ -139,7 +272,7 @@ const ParameterRow = (props) => {
                 >
                     <RemoveButton
                         id={props.parameter.id}
-                        remove={props.removeParameter}
+                        remove={removeParameter}
                     />
                 </td>
             }
@@ -165,7 +298,7 @@ const ExplainerRow = (props) => {
                     }}
                 >
                     <div>
-                        This is a description of the parameter <b>{props.parameter.name}</b> to help the user understand it and its implications for society and/or their household.
+                        This is a description of the parameter <b>{props.parameter.label}</b> to help the user understand it and its implications for society and/or their household.
                     </div>
                     <div
                         style={{
@@ -180,72 +313,75 @@ const ExplainerRow = (props) => {
     );
 }
 
+// const ParameterMenu = (props) => {
+//     return (<>
+//         {props.parameterOptions
+//             .filter(option => !props.parameters.some(p => p.id === option.id))
+//             .map((parameter) => (
+//                 <ParameterRow
+//                     key={parameter.id}
+//                     isEditingReform={false}
+//                     parameter={parameter}
+//                     onClick={() => props.addParameter(parameter.id)}
+//                     isInParameterMenu={true}
+//                 />
+//             ))
+//         }
+//     </>);
+// }
+
 const ParameterMenu = (props) => {
-    return (<>
-        {props.parameterOptions
-            .filter(option => !props.parameters.some(p => p.id === option.id))
-            .map((parameter) => (
-                <ParameterRow
-                    key={parameter.id}
-                    isEditing={false}
-                    parameter={parameter}
-                    removeParameter={props.removeParameter}
-                    onClick={() => props.addParameter(parameter.id)}
-                    isInParameterMenu={true}
-                />
-            ))
-        }
-    </>);
+    const filteredOptions = props.parameterOptions.filter(o => !props.parameters.some(p => p.id === o.id));
+    const formattedOptions = filteredOptions.map(o => ({value: o.id, label: o.label}));
+
+    return (
+        <SearchSelect
+            options={formattedOptions}
+            defaultValue={null}
+            style={{ margin: 0, width: "100%" }}
+            placeholder="Search for a parameter"
+            onSelect={(id) => props.addParameter(id)}
+        />
+    );
 }
 
-export default function PolicyTable(props) {
+const ParameterFooter = (props) => {
     const [showParameterMenu, setShowParameterMenu] = useState(false);
-    const [showReformMenu, setShowReformMenu] = useState(false);
-    const [isEditing, setIsEditing] = useState(false);
-    const [tempReform, setTempReform] = useState(props.reform);
-    const [expandedParameterId, setExpandedParameterId] = useState(null);
 
     const openParameterMenu = () => {
         setShowParameterMenu(true);
     }
 
     const addParameter = (id) => {
-        props.setParameters([...props.parameters, props.parameterOptions.find((param) => param.id === id)]);
+        props.setParameters([...props.parameters, props.parameterOptions.find((p) => p.id === id)]);
         setShowParameterMenu(false);
     };
 
-    const removeParameter = (id) => {
-        const updatedParameters = props.parameters.filter((p) => p.id !== id);
-        props.setParameters(updatedParameters);
-    };
+    return (
+        !showParameterMenu
+            ? <AddButton
+                label={"Parameter"}
+                add={openParameterMenu}
+            />
+            : <ParameterMenu 
+                parameters={props.parameters}
+                parameterOptions={props.parameterOptions}
+                addParameter={addParameter}
+            />
+    );
+}
 
-    const openReformMenu = () => {
-        setShowReformMenu(true);
-    }
-    
-    const loadReform = (reform) => {
-        props.setReform(reform);
-        props.setParameters([...new Set(props.parameters.concat(reform.parameters).map(p => p.id))].map(id => props.parameterOptions.find(p => p.id === id)));
-        setShowReformMenu(false);
-    }      
-
-    const editReform = () => {
-        setTempReform(props.reform);
-        setIsEditing(true);
-    }
+export default function PolicyTable(props) {
+    const [tempReform, setTempReform] = useState(props.reform);
 
     const saveReform = () => {
         props.setReform(tempReform);
-        setIsEditing(false);
-    }
-
-    const removeReform = () => {
-        props.setReform(null);
+        props.setIsEditingReform(false);
     }
 
     const modifyTempReform = (obj) => {
-        if (obj.name) {
-            setTempReform({...tempReform, name: obj.name});
+        if (obj.title) {
+            setTempReform({...tempReform, title: obj.title});
         } else {
         const tempReformParameter = tempReform.parameters.find((p) => p.id === obj.id);
         !tempReformParameter
@@ -261,48 +397,19 @@ export default function PolicyTable(props) {
                 backgroundColor: "lightgray",
             }}
         >
-            <div
-                style={{
-                    width: "100%",
-                    display: "flex",
-                    justifyContent: "space-between",
-                    padding: "8px",
-                    fontSize: "30px",
-                }}
-            >
-                {!props.reform
-                    ? showReformMenu
-                        ? <ReformMenu
-                            loadReform={loadReform}
-                        />
-                        : <AddButton
-                            label={"Reform"}
-                            add={openReformMenu}
-                        />
-                    : isEditing
-                            ? <input
-                                value={tempReform.name}
-                                onChange={(e) => modifyTempReform({name: e.target.value})}
-                                onKeyDown={(e) => {if (e.key === 'Enter') saveReform();}}
-                                style={{
-                                    width: "100%",
-                                    color: "black",
-                                }}
-                            />
-                            : <>
-                                <b>{props.reform.name}</b>
-                                <div>
-                                    <ToggleEditSaveButton
-                                        isEditing={isEditing}
-                                        edit={editReform}
-                                        save={saveReform} />
-                                    <RemoveButton
-                                        id={null}
-                                        remove={removeReform} />
-                                </div>
-                            </>
-                }
-            </div>
+            <ReformHeader
+                isEditingReform={props.isEditingReform}
+                setIsEditingReform={props.setIsEditingReform}
+                reform={props.reform}
+                setReform={props.setReform}
+                saveReform={saveReform}
+                parameters={props.parameters}
+                setParameters={props.setParameters}
+                tempReform={tempReform}
+                setTempReform={setTempReform}
+                modifyTempReform={modifyTempReform}
+                parameterOptions={parameterOptions}
+            />
             <table
                 style={{
                     width: "100%",
@@ -312,43 +419,9 @@ export default function PolicyTable(props) {
                 }}
             >
             <thead>
-                <tr>
-                    <th
-                        style={{
-                            padding: "5px",
-                            color: "white",
-                            backgroundColor: style.colors.BLUE,
-                        }}
-                    >
-                        Parameter
-                    </th>
-                    <th
-                        style={{
-                            width: "100px",
-                            padding: "5px",
-                            color: "white",
-                            backgroundColor: style.colors.BLUE,
-                        }}
-                    >
-                        Current
-                    </th>
-                    {!props.reform ? <>
-                        <th style={{width: "100px",}}/>
-                        <th style={{width: "36px",}}/>
-                    </> : <>
-                        <th
-                            style={{
-                                width: "100px",
-                                padding: "5px",
-                                color: "white",
-                                backgroundColor: style.colors.TEAL_ACCENT,
-                            }}
-                        >
-                            Reform
-                        </th>
-                        <th style={{width: "36px",}} />
-                    </>}
-                </tr>
+                <HeaderRow
+                    reform={props.reform}
+                />
             </thead>
             <tbody>
                 {props.parameters.map((parameter) => {
@@ -357,19 +430,22 @@ export default function PolicyTable(props) {
                     return (<>
                         <ParameterRow
                             key={parameter.id}
-                            isEditing={isEditing}
                             parameter={parameter}
+                            parameters={props.parameters}
+                            setParameters={props.setParameters}
+                            isEditingReform={props.isEditingReform}
                             reform={props.reform}
                             saveReform={saveReform}
                             tempReform={tempReform}
                             modifyTempReform={modifyTempReform}
                             reformValue={reformParameter ? reformParameter.reformValue : parameter.currentLawValue}
-                            removeParameter={removeParameter}
-                            onClick={() => {
-                                parameter.id === expandedParameterId ? setExpandedParameterId(null) : setExpandedParameterId(parameter.id);
+                            onClick={(e) => {
+                                if (e.target.className==="data") {
+                                    parameter.id === props.expandedParameterId ? props.setExpandedParameterId(null) : props.setExpandedParameterId(parameter.id);
+                                }
                             }}
                         />
-                        {parameter.id === expandedParameterId
+                        {parameter.id === props.expandedParameterId
                             ? <ExplainerRow
                                 parameter={parameter}
                                 reform={props.reform}
@@ -378,23 +454,12 @@ export default function PolicyTable(props) {
                         }
                     </>);
                 })}
-                {!showParameterMenu
-                    ? <tr>
-                        <td>
-                            <AddButton
-                                label={"Parameter"}
-                                add={openParameterMenu}
-                            />
-                        </td>
-                    </tr>
-                    : <ParameterMenu 
-                        parameters={props.parameters}
-                        parameterOptions={props.parameterOptions}
-                        addParameter={addParameter}
-                        removeParameter={removeParameter}
-                    />
-                }
             </tbody>
+            <ParameterFooter
+                parameters={props.parameters}
+                setParameters={props.setParameters}
+                parameterOptions={parameterOptions}
+            />
             </table>
         </div>
     );

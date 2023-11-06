@@ -431,32 +431,10 @@ export default function PolicyPage(props) {
   }
 
   const [parameters, setParameters] = useState([]);
-
-  const parameterOptions = [
-    {
-      id: "par00000",
-      name: "Child Tax Credit",
-      currentLawValue: 100,
-    },
-    {
-      id: "par00001",
-      name: "Earned Income Tax Credit",
-      currentLawValue: 500,
-    },
-    {
-      id: "par00002",
-      name: "Estate Tax",
-      currentLawValue: 1000,
-    },
-    {
-      id: "par00003",
-      name: "Income Tax",
-      currentLawValue: 200,
-    },
-  ];
-  
+  const [expandedParameterId, setExpandedParameterId] = useState(null);
   const [reform, setReform] = useState(null);
-
+  const [isEditingReform, setIsEditingReform] = useState(false);
+  const [isInHouseholdMode, setIsInHouseholdMode] = useState(false);
   const [calcSettings, setCalcSettings] = useState({
     metric: "none",
     region: "none",
@@ -464,7 +442,6 @@ export default function PolicyPage(props) {
     startTime: "2024",
     endTime: "2027",
   })
-
   const [household, setHousehold] = useState({
     region: {
       value: "none",
@@ -477,8 +454,6 @@ export default function PolicyPage(props) {
     spouse: null,
     dependents: [],
   });
-
-  const [isInHouseholdMode, setIsInHouseholdMode] = useState(false);
 
   function SectionHeader(props) {
     return (
@@ -551,11 +526,14 @@ export default function PolicyPage(props) {
         <SectionHeader title="Input"/>
         <SectionBody>
           <PolicyTable
-            reform={reform}
-            setReform={setReform}
             parameters={parameters}
             setParameters={setParameters}
-            parameterOptions={parameterOptions}
+            expandedParameterId={expandedParameterId}
+            setExpandedParameterId={setExpandedParameterId}
+            reform={reform}
+            setReform={setReform}
+            isEditingReform={isEditingReform}
+            setIsEditingReform={setIsEditingReform}
           />
         </SectionBody>
         <CalcDashboard

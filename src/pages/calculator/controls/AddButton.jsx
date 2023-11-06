@@ -1,11 +1,12 @@
 import {
     PlusOutlined
 } from "@ant-design/icons";
+import { Button } from "antd";
 
 export default function AddButton(props) {
     return (
-        <button onClick={props.add}>
+        <Button style={props.style || {width: "auto"}} onClick={props.add}>
             <PlusOutlined /><span>{' '+props.label}</span>
-        </button>
+        </Button>
     );
 }
